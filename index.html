@@ -3,194 +3,307 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Smart Cab Booking</title>
-  <meta name="description" content="Responsive AI-powered cab booking demo with Google Maps integration." />
+  <title>CabBook — No Maps Demo</title>
+  <meta name="description" content="Responsive Cab Booking demo without maps — fare estimate, driver matching, booking history, chatbot, dark mode." />
   <style>
-    :root{--accent:#0b76ef;--muted:#6b7280;--card:#ffffff;--bg:#f3f5f9}
+    :root{--bg:#f3f5f9;--card:#fff;--accent:#0b76ef;--muted:#6b7280;--success:#16a34a}
+    [data-theme="dark"]{--bg:#0b1020;--card:#0f1724;--accent:#4fb2ff;--muted:#9aa6bf}
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:#111}
-    .container{max-width:1100px;margin:auto;padding:20px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .logo{background:linear-gradient(135deg,var(--accent),#4fb2ff);color:#fff;font-weight:700;padding:12px 16px;border-radius:10px}
-    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 4px 12px rgba(0,0,0,0.06)}
-    .btn{padding:10px 14px;border:none;border-radius:8px;background:var(--accent);color:white;font-weight:600;cursor:pointer}
-    input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e4e7ec;font-size:14px}
-    label{font-size:12px;color:var(--muted)}
-    .app{display:grid;grid-template-columns:1fr 420px;gap:20px;margin-top:20px}
-    @media(max-width:920px){.app{grid-template-columns:1fr}}
-    #map{width:100%;height:320px;border-radius:10px;margin-top:10px}
-    .chatbot{position:fixed;bottom:20px;right:20px;width:280px;background:#fff;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;font-size:14px}
-    .chat-header{background:var(--accent);color:#fff;padding:10px;font-weight:600;text-align:center}
-    .chat-body{padding:10px;height:200px;overflow-y:auto}
-    .chat-input{display:flex;border-top:1px solid #eee}
-    .chat-input input{flex:1;border:none;padding:10px}
-    .chat-input button{background:var(--accent);color:white;border:none;padding:10px 14px}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--muted)}
+    .container{max-width:1100px;margin:24px auto;padding:18px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6ec1ff);display:grid;place-items:center;color:white;font-weight:900}
+    h1{margin:0;font-size:20px;color:var(--muted)}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .app{display:grid;grid-template-columns:1fr 380px;gap:18px;margin-top:18px}
+    @media(max-width:940px){.app{grid-template-columns:1fr}}
+
+    .card{background:var(--card);border-radius:12px;padding:16px;box-shadow:0 6px 20px rgba(2,6,23,0.06)}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #e6e9ef;font-size:14px;background:transparent;color:inherit}
+    .row{display:flex;gap:12px}
+    .btn{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
+    .muted{color:var(--muted);font-size:13px}
+    .small{font-size:13px}
+
+    /* booking list */
+    .bookings{margin-top:12px}
+    .booking{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;border:1px solid #eef2f7;margin-bottom:8px}
+    .pill{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(11,118,239,0.08);font-weight:700;color:var(--accent)}
+
+    /* chatbot */
+    .chat{position:fixed;right:18px;bottom:18px;width:320px;max-width:92vw;border-radius:12px;overflow:hidden;box-shadow:0 8px 30px rgba(2,6,23,0.2)}
+    .chat .header{background:var(--accent);color:white;padding:10px;font-weight:700}
+    .chat .body{height:220px;padding:10px;background:var(--card);overflow:auto}
+    .chat .input{display:flex;border-top:1px solid #eee}
+    .chat .input input{flex:1;padding:10px;border:0}
+    .chat .input button{padding:10px;border:0;background:var(--accent);color:white}
+
+    /* misc */
+    .flex{display:flex;align-items:center;gap:8px}
+    .center{text-align:center}
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="app">
     <header>
-      <div class="logo">🚖 CabBook AI</div>
-      <div class="muted">Smart booking • Live map • AI helper</div>
+      <div class="brand">
+        <div class="logo">CB</div>
+        <div>
+          <h1>CabBook — No Maps</h1>
+          <p class="lead">Full demo: booking flow, fare estimates, driver matching, history & chatbot — no map required.</p>
+        </div>
+      </div>
+      <div class="flex">
+        <button id="themeToggle" class="btn" style="background:transparent;color:var(--accent);border:1px solid rgba(11,118,239,0.12)">Toggle Theme</button>
+      </div>
     </header>
 
     <main class="app">
       <section>
         <div class="card">
-          <h3>Book your ride</h3>
-          <form id="form">
-            <label>Pickup Location</label>
-            <input id="pickup" placeholder="Enter pickup" required />
-            <label>Drop Location</label>
-            <input id="drop" placeholder="Enter drop" required />
-            <label>Date & Time</label>
-            <input id="datetime" type="datetime-local" />
-            <label>Vehicle Type</label>
+          <h3 style="margin-top:0">Book a ride</h3>
+          <form id="bookingForm">
+            <label>Pickup location</label>
+            <input id="pickup" placeholder="eg: Simhachalam, Visakhapatnam" required />
+
+            <label style="margin-top:8px">Drop location</label>
+            <input id="drop" placeholder="eg: MVP Colony" required />
+
+            <div class="row" style="margin-top:10px">
+              <div style="flex:1">
+                <label>Date & time</label>
+                <input id="datetime" type="datetime-local" />
+              </div>
+              <div style="width:140px">
+                <label>Passengers</label>
+                <select id="passengers">
+                  <option>1</option><option>2</option><option>3</option><option>4</option>
+                </select>
+              </div>
+            </div>
+
+            <label style="margin-top:10px">Vehicle type</label>
             <select id="vehicle">
               <option value="mini">Mini</option>
               <option value="sedan">Sedan</option>
               <option value="suv">SUV</option>
               <option value="lux">Luxury</option>
             </select>
-            <button class="btn" type="submit">Find Ride</button>
+
+            <label style="margin-top:10px">Notes (optional)</label>
+            <textarea id="notes" rows="2" placeholder="Eg: Need child seat, pickup at gate"></textarea>
+
+            <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+              <button class="btn" type="submit">Estimate & Find Driver</button>
+              <div id="estFare" class="muted small">Estimated fare: —</div>
+            </div>
           </form>
-          <div id="map"></div>
-          <div id="fare" style="margin-top:10px;font-weight:600"></div>
+
+          <div id="driverCard" style="margin-top:14px;display:none"></div>
+
+          <div class="card" style="margin-top:14px;background:transparent;box-shadow:none;padding:0">
+            <h4 style="margin:0 0 8px 0">Your bookings</h4>
+            <div id="bookings" class="bookings muted small">No bookings yet</div>
+          </div>
         </div>
       </section>
 
       <aside>
         <div class="card">
           <h3>Ride Summary</h3>
-          <p id="summary">Fill details and search to get started.</p>
+          <div id="summary" class="small">Fill the form and press <strong>Estimate & Find Driver</strong>.</div>
+
+          <div style="margin-top:12px">
+            <h4 style="margin:0 0 8px 0">Quick actions</h4>
+            <button id="viewHistory" class="btn" style="background:transparent;color:var(--accent);border:1px solid rgba(11,118,239,0.12)">View Booking History</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h4 style="margin:0">Notes</h4>
+          <p class="small muted" style="margin-top:8px">This demo simulates driver matching and ETA. All data is stored locally in your browser (localStorage).</p>
         </div>
       </aside>
     </main>
+
+    <footer class="center">
+      Built for demonstration • Deploy on GitHub Pages by adding this file as <code>index.html</code> to your repo root.
+    </footer>
   </div>
 
-  <!-- Chatbot -->
-  <div class="chatbot" id="chat">
-    <div class="chat-header">Ride Assistant 🤖</div>
-    <div class="chat-body" id="chatBody"></div>
-    <div class="chat-input">
-      <input id="chatMsg" placeholder="Ask about fare or routes..." />
-      <button onclick="sendMsg()">▶</button>
+  <!-- Chatbot (local JS) -->
+  <div class="chat" id="chat">
+    <div class="header">Ride Assistant 🤖</div>
+    <div class="body" id="chatBody"><div style="color:var(--muted);font-size:13px">Hi — ask about fares (eg: "fare from Simhachalam to MVP"), vehicle availability or how to cancel a booking.</div></div>
+    <div class="input">
+      <input id="chatInput" placeholder="Ask about fare or routes..." />
+      <button id="chatSend">▶</button>
     </div>
   </div>
 
   <script>
-    let map, directionsService, directionsRenderer;
-    let pickupPlace, dropPlace;
+    // ======= Simple app state and helpers =======
+    const VEHICLES = { mini:{base:40,per_km:10}, sedan:{base:60,per_km:14}, suv:{base:90,per_km:18}, lux:{base:150,per_km:32} };
+    const SAMPLE_DRIVERS = [
+      {name:'Ravi',car:'mini',rating:4.7,plate:'AP09AB1234'},
+      {name:'Ankita',car:'sedan',rating:4.9,plate:'TS07CD5678'},
+      {name:'Mohan',car:'suv',rating:4.6,plate:'KA03EF2345'},
+      {name:'Deepa',car:'lux',rating:4.9,plate:'AP16GH9988'}
+    ];
 
-    // ✅ Fix: make initMap global for Google callback
-    window.initMap = function() {
-      map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 17.3850, lng: 78.4867 }, zoom: 12,
-      });
-      directionsService = new google.maps.DirectionsService();
-      directionsRenderer = new google.maps.DirectionsRenderer({ map });
+    function $(id){return document.getElementById(id)}
 
-      const pickupInput = document.getElementById("pickup");
-      const dropInput = document.getElementById("drop");
-
-      const autocompletePickup = new google.maps.places.Autocomplete(pickupInput);
-      const autocompleteDrop = new google.maps.places.Autocomplete(dropInput);
-
-      autocompletePickup.addListener("place_changed", () => {
-        pickupPlace = autocompletePickup.getPlace();
-      });
-      autocompleteDrop.addListener("place_changed", () => {
-        dropPlace = autocompleteDrop.getPlace();
-      });
+    // naive distance estimator without maps: use lookup table or fallback to character heuristic
+    const DIST_LOOKUP = {
+      'simhachalam|mvp': 12,
+      'vizag|vizag': 2,
+      'gajuwaka|simhachalam': 9,
+      'dwaraka|mvp': 6
     };
 
-    document.getElementById("form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      if (!pickupPlace || !dropPlace) {
-        alert("Please select valid locations from suggestions.");
-        return;
-      }
-      calculateRoute();
-    });
+    function estimateDistance(pick, drop){
+      if(!pick||!drop) return 0;
+      const a = pick.toLowerCase().trim().split(',')[0];
+      const b = drop.toLowerCase().trim().split(',')[0];
+      const key = a + '|' + b;
+      const rev = b + '|' + a;
+      if(DIST_LOOKUP[key]) return DIST_LOOKUP[key];
+      if(DIST_LOOKUP[rev]) return DIST_LOOKUP[rev];
+      // fallback heuristic: base on string lengths & word overlap
+      const la = a.replace(/\s+/g,'').length; const lb = b.replace(/\s+/g,'').length;
+      const common = a.split(' ').filter(w=>b.split(' ').includes(w)).length;
+      const d = Math.max(2, Math.round(Math.abs(la-lb) + (la+lb)/12 - common));
+      return d;
+    }
 
-    function calculateRoute() {
-      const req = {
-        origin: pickupPlace.geometry.location,
-        destination: dropPlace.geometry.location,
-        travelMode: "DRIVING"
-      };
-      directionsService.route(req, (res, status) => {
-        if (status === "OK") {
-          directionsRenderer.setDirections(res);
-          const dist = res.routes[0].legs[0].distance.value / 1000;
-          const time = res.routes[0].legs[0].duration.text;
-          const type = document.getElementById("vehicle").value;
-          const fare = calcFare(type, dist);
-          document.getElementById("fare").textContent = 
-            `Distance: ${dist.toFixed(1)} km • Est time: ${time} • Fare: ₹${fare}`;
-          document.getElementById("summary").innerHTML = 
-            `<b>${type.toUpperCase()}</b> from <i>${pickupPlace.name}</i> to <i>${dropPlace.name}</i><br>
-             Distance: ${dist.toFixed(1)} km • Fare: ₹${fare}`;
-        } else alert("Route not found.");
+    function calcFare(type, dist){
+      const v = VEHICLES[type] || VEHICLES.mini;
+      const surge = applySurge();
+      return Math.round((v.base + v.per_km * dist) * surge);
+    }
+
+    function applySurge(){
+      const hr = new Date().getHours();
+      // simple surge: peak hours 7-9 and 18-21
+      if(hr>=7 && hr<=9) return 1.2;
+      if(hr>=18 && hr<=21) return 1.25;
+      return 1.0;
+    }
+
+    // localStorage for bookings
+    function loadBookings(){ try{ return JSON.parse(localStorage.getItem('cabbook_bookings')||'[]')}catch(e){return []} }
+    function saveBookings(b){ localStorage.setItem('cabbook_bookings', JSON.stringify(b)); }
+
+    function renderBookings(){
+      const box = $('bookings'); const arr = loadBookings();
+      if(!arr.length){ box.textContent = 'No bookings yet'; box.classList.add('muted'); return; }
+      box.classList.remove('muted'); box.innerHTML = '';
+      arr.slice().reverse().forEach(b=>{
+        const el = document.createElement('div'); el.className='booking';
+        el.innerHTML = `<div>
+          <div style="font-weight:700">${b.car.toUpperCase()} • ${b.fareText}</div>
+          <div class="muted small">${b.pick} → ${b.drop} • ${b.timeText}</div>
+          <div style="font-size:13px;color:var(--muted)">Driver: ${b.driver.name} • ${b.driver.plate} • ${b.driver.rating}⭐</div>
+        </div>
+        <div style="text-align:right;display:flex;gap:8px;align-items:center">
+          <button onclick="cancelBooking('${b.id}')" style="padding:6px 8px;border-radius:8px;border:0;background:#ff6b6b;color:white">Cancel</button>
+          <button onclick="rateBooking('${b.id}')" style="padding:6px 8px;border-radius:8px;border:0;background:var(--accent);color:white">Rate</button>
+        </div>`;
+        box.appendChild(el);
       });
     }
 
-    function calcFare(type, dist) {
-      const rates = { mini: 10, sedan: 14, suv: 18, lux: 30 };
-      const base = { mini: 50, sedan: 70, suv: 90, lux: 150 };
-      return (base[type] + dist * rates[type]).toFixed(0);
+    window.cancelBooking = function(id){
+      let arr = loadBookings(); arr = arr.filter(x=>x.id!==id); saveBookings(arr); renderBookings(); alert('Booking canceled.');
     }
 
-    // ✅ AI Chat Assistant with Gemini API
-    const GEMINI_API_KEY = "AIzaSyBChtpfxdTTuHGV_UY1-i6EpBhC03-1K1M";
-    const chatBody = document.getElementById("chatBody");
-
-    async function sendMsg() {
-      const msg = document.getElementById("chatMsg").value.trim();
-      if (!msg) return;
-      appendMsg("user", msg);
-      document.getElementById("chatMsg").value = "";
-
-      appendMsg("bot", "Thinking...");
-      const res = await getBotReply(msg);
-      chatBody.lastChild.innerHTML = `<div style="background:#eef6ff;display:inline-block;padding:6px 10px;border-radius:8px">${res}</div>`;
+    window.rateBooking = function(id){
+      const r = prompt('Rate your ride 1-5 stars');
+      if(!r) return; const rating = Math.max(1, Math.min(5, Number(r)||5));
+      let arr = loadBookings(); const idx = arr.findIndex(x=>x.id===id); if(idx!==-1){ arr[idx].rating = rating; saveBookings(arr); renderBookings(); alert('Thanks for rating!'); }
     }
 
-    function appendMsg(sender, text) {
-      const el = document.createElement("div");
-      el.style.margin = "6px 0";
-      el.style.textAlign = sender === "bot" ? "left" : "right";
-      el.innerHTML = sender === "bot"
-        ? `<div style="background:#eef6ff;display:inline-block;padding:6px 10px;border-radius:8px">${text}</div>`
-        : `<div style="background:#0b76ef;color:white;display:inline-block;padding:6px 10px;border-radius:8px">${text}</div>`;
-      chatBody.appendChild(el);
-      chatBody.scrollTop = chatBody.scrollHeight;
+    // handle form submit
+    $('bookingForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const pick = $('pickup').value.trim(); const drop = $('drop').value.trim();
+      const vehicle = $('vehicle').value; const timeVal = $('datetime').value; const notes = $('notes').value;
+      if(!pick||!drop){ alert('Please enter pickup and drop.'); return; }
+      const dist = estimateDistance(pick, drop);
+      const fare = calcFare(vehicle, dist);
+      $('estFare').textContent = `Estimated fare: ₹${fare} • ${dist} km`;
+      $('driverCard').style.display = 'block';
+      $('driverCard').className = 'card';
+      // choose a driver that matches vehicle type if possible
+      let driver = SAMPLE_DRIVERS.find(d=>d.car===vehicle) || SAMPLE_DRIVERS[Math.floor(Math.random()*SAMPLE_DRIVERS.length)];
+      const eta = Math.max(3, Math.round(Math.random()*12));
+      $('driverCard').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:800">${driver.name} • ${driver.plate}</div>
+          <div class="muted small">${driver.car.toUpperCase()} • ${driver.rating}⭐ • ETA ${eta} min</div>
+        </div>
+        <div style="text-align:right">
+          <button class="btn" id="confirmBtn">Confirm Booking</button>
+        </div>
+      </div>`;
+
+      $('confirmBtn').addEventListener('click', ()=>{
+        const id = 'b_' + Date.now();
+        const booking = { id, pick, drop, vehicle, notes, dist, fare, fareText:'₹'+fare, time: timeVal || 'ASAP', timeText: timeVal ? new Date(timeVal).toLocaleString() : 'ASAP', driver, status:'On the way' };
+        const arr = loadBookings(); arr.push(booking); saveBookings(arr); renderBookings();
+        $('driverCard').style.display = 'none'; $('estFare').textContent = 'Estimated fare: —';
+        $('summary').innerHTML = `<b>${vehicle.toUpperCase()}</b> from <i>${pick}</i> to <i>${drop}</i><br>Fare: ₹${fare} • Driver: ${driver.name} • ETA ${eta} min`;
+        alert('Booking confirmed! Check "Your bookings" for details.');
+      });
+    });
+
+    // chatbot logic (local)
+    const chatBody = $('chatBody'); const chatInput = $('chatInput');
+    document.getElementById('chatSend').addEventListener('click', handleChat);
+    chatInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') handleChat(); });
+
+    function handleChat(){
+      const txt = chatInput.value.trim(); if(!txt) return; appendChat('user', txt); chatInput.value='';
+      setTimeout(()=>{ appendChat('bot', getBotReply(txt)); }, 300);
     }
 
-    async function getBotReply(msg) {
-      try {
-        const response = await fetch(
-          "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + GEMINI_API_KEY,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ role: "user", parts: [{ text: "Cab booking assistant: " + msg }] }]
-            })
-          }
-        );
-        const data = await response.json();
-        return data?.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I didn’t get that.";
-      } catch (err) {
-        console.error(err);
-        return "Error connecting to AI service.";
+    function appendChat(who, text){ const d = document.createElement('div'); d.style.margin='8px 0'; d.style.textAlign = who==='bot'?'left':'right'; d.innerHTML = who==='bot'?`<div style="display:inline-block;padding:8px;border-radius:8px;background:#eef6ff;color:#000">${text}</div>`:`<div style="display:inline-block;padding:8px;border-radius:8px;background:var(--accent);color:#fff">${text}</div>`; chatBody.appendChild(d); chatBody.scrollTop = chatBody.scrollHeight; }
+
+    function getBotReply(msg){
+      const m = msg.toLowerCase();
+      if(m.includes('fare') || m.startsWith('how much') || m.includes('price')){
+        // try to parse "from X to Y"
+        const parts = m.match(/from\s+([a-z0-9\s]+)\s+to\s+([a-z0-9\s]+)/i);
+        if(parts && parts[1] && parts[2]){
+          const a = parts[1].trim(); const b = parts[2].trim();
+          const d = estimateDistance(a,b); const f = calcFare('sedan', d);
+          return `Estimated distance ${d} km — approx fare for Sedan: ₹${f}`;
+        }
+        return 'Enter pickup & drop in the form and press Estimate to get a fare. Or type: from X to Y';
       }
+      if(m.includes('available')||m.includes('vehicles')||m.includes('cars')) return 'Available vehicles: Mini, Sedan, SUV, Luxury.';
+      if(m.includes('cancel')) return 'To cancel a booking, open the booking in "Your bookings" and press Cancel.';
+      if(m.includes('history')||m.includes('bookings')){
+        const arr = loadBookings(); if(!arr.length) return 'No previous bookings.'; return `You have ${arr.length} booking(s).`; }
+      if(m.includes('help')||m.includes('hi')||m.includes('hello')) return 'Hi! I can estimate fares and explain the booking flow. Try: "fare from Simhachalam to MVP".';
+      return "I can help with fare estimates, vehicle availability and bookings. Try asking 'fare from A to B' or 'what vehicles are available'.";
     }
-  </script>
 
-  <!-- ✅ Keep same Google Maps API key -->
-  <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBChtpfxdTTuHGV_UY1-i6EpBhC03-1K1M&libraries=places&callback=initMap">
+    // theme toggle
+    const themeToggle = $('themeToggle'); const root = document.documentElement;
+    themeToggle.addEventListener('click', ()=>{
+      if(document.documentElement.hasAttribute('data-theme')){ document.documentElement.removeAttribute('data-theme'); } else { document.documentElement.setAttribute('data-theme','dark'); }
+    });
+
+    // view history button
+    $('viewHistory').addEventListener('click', ()=>{ const arr = loadBookings(); if(!arr.length) return alert('No bookings yet'); const txt = arr.map(b=>`${b.timeText} • ${b.car || b.vehicle} • ${b.pick} → ${b.drop} • ${b.fareText}`).join('\n\n'); alert(txt); });
+
+    // init
+    renderBookings();
   </script>
 </body>
 </html>
