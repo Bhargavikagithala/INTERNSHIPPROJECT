@@ -146,7 +146,6 @@
   </div>
 
   <script>
-    // ======= Simple app state and helpers =======
     const VEHICLES = { mini:{base:40,per_km:10}, sedan:{base:60,per_km:14}, suv:{base:90,per_km:18}, lux:{base:150,per_km:32} };
     const SAMPLE_DRIVERS = [
       {name:'Ravi',car:'mini',rating:4.7,plate:'AP09AB1234'},
@@ -157,7 +156,6 @@
 
     function $(id){return document.getElementById(id)}
 
-    // naive distance estimator without maps: use lookup table or fallback to character heuristic
     const DIST_LOOKUP = {
       'simhachalam|mvp': 12,
       'vizag|vizag': 2,
@@ -173,11 +171,9 @@
       const rev = b + '|' + a;
       if(DIST_LOOKUP[key]) return DIST_LOOKUP[key];
       if(DIST_LOOKUP[rev]) return DIST_LOOKUP[rev];
-      // fallback heuristic: base on string lengths & word overlap
       const la = a.replace(/\s+/g,'').length; const lb = b.replace(/\s+/g,'').length;
       const common = a.split(' ').filter(w=>b.split(' ').includes(w)).length;
-      const d = Math.max(2, Math.round(Math.abs(la-lb) + (la+lb)/12 - common));
-      return d;
+      return Math.max(2, Math.round(Math.abs(la-lb) + (la+lb)/12 - common));
     }
 
     function calcFare(type, dist){
@@ -188,13 +184,11 @@
 
     function applySurge(){
       const hr = new Date().getHours();
-      // simple surge: peak hours 7-9 and 18-21
       if(hr>=7 && hr<=9) return 1.2;
       if(hr>=18 && hr<=21) return 1.25;
       return 1.0;
     }
 
-    // localStorage for bookings
     function loadBookings(){ try{ return JSON.parse(localStorage.getItem('cabbook_bookings')||'[]')}catch(e){return []} }
     function saveBookings(b){ localStorage.setItem('cabbook_bookings', JSON.stringify(b)); }
 
@@ -227,41 +221,59 @@
       let arr = loadBookings(); const idx = arr.findIndex(x=>x.id===id); if(idx!==-1){ arr[idx].rating = rating; saveBookings(arr); renderBookings(); alert('Thanks for rating!'); }
     }
 
-    // handle form submit
+    // ======== Booking Form ========
     $('bookingForm').addEventListener('submit', (e)=>{
       e.preventDefault();
-      const pick = $('pickup').value.trim(); const drop = $('drop').value.trim();
-      const vehicle = $('vehicle').value; const timeVal = $('datetime').value; const notes = $('notes').value;
+      const pick = $('pickup').value.trim(); 
+      const drop = $('drop').value.trim();
+      const vehicle = $('vehicle').value; 
+      const timeVal = $('datetime').value; 
+      const notes = $('notes').value;
       if(!pick||!drop){ alert('Please enter pickup and drop.'); return; }
+
       const dist = estimateDistance(pick, drop);
       const fare = calcFare(vehicle, dist);
       $('estFare').textContent = `Estimated fare: ₹${fare} • ${dist} km`;
       $('driverCard').style.display = 'block';
       $('driverCard').className = 'card';
-      // choose a driver that matches vehicle type if possible
+
       let driver = SAMPLE_DRIVERS.find(d=>d.car===vehicle) || SAMPLE_DRIVERS[Math.floor(Math.random()*SAMPLE_DRIVERS.length)];
       const eta = Math.max(3, Math.round(Math.random()*12));
-      $('driverCard').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-weight:800">${driver.name} • ${driver.plate}</div>
-          <div class="muted small">${driver.car.toUpperCase()} • ${driver.rating}⭐ • ETA ${eta} min</div>
-        </div>
-        <div style="text-align:right">
-          <button class="btn" id="confirmBtn">Confirm Booking</button>
-        </div>
-      </div>`;
 
-      $('confirmBtn').addEventListener('click', ()=>{
+      $('driverCard').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:800">${driver.name} • ${driver.plate}</div>
+            <div class="muted small">${driver.car.toUpperCase()} • ${driver.rating}⭐ • ETA ${eta} min</div>
+          </div>
+          <div style="text-align:right">
+            <button class="btn" id="confirmBtn">Confirm Booking</button>
+          </div>
+        </div>`;
+
+      // Attach listener **after adding the button to the DOM**
+      const confirmBtn = $('confirmBtn');
+      confirmBtn.onclick = () => {
         const id = 'b_' + Date.now();
-        const booking = { id, pick, drop, vehicle, notes, dist, fare, fareText:'₹'+fare, time: timeVal || 'ASAP', timeText: timeVal ? new Date(timeVal).toLocaleString() : 'ASAP', driver, status:'On the way' };
-        const arr = loadBookings(); arr.push(booking); saveBookings(arr); renderBookings();
-        $('driverCard').style.display = 'none'; $('estFare').textContent = 'Estimated fare: —';
+        const booking = {
+          id, pick, drop, vehicle, notes, dist, fare, fareText:'₹'+fare,
+          time: timeVal || 'ASAP',
+          timeText: timeVal ? new Date(timeVal).toLocaleString() : 'ASAP',
+          driver, status:'On the way'
+        };
+        const arr = loadBookings(); 
+        arr.push(booking); 
+        saveBookings(arr); 
+        renderBookings();
+
+        $('driverCard').style.display = 'none';
+        $('estFare').textContent = 'Estimated fare: —';
         $('summary').innerHTML = `<b>${vehicle.toUpperCase()}</b> from <i>${pick}</i> to <i>${drop}</i><br>Fare: ₹${fare} • Driver: ${driver.name} • ETA ${eta} min`;
         alert('Booking confirmed! Check "Your bookings" for details.');
-      });
+      };
     });
 
-    // chatbot logic (local)
+    // ======== Chatbot ========
     const chatBody = $('chatBody'); const chatInput = $('chatInput');
     document.getElementById('chatSend').addEventListener('click', handleChat);
     chatInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') handleChat(); });
@@ -271,12 +283,18 @@
       setTimeout(()=>{ appendChat('bot', getBotReply(txt)); }, 300);
     }
 
-    function appendChat(who, text){ const d = document.createElement('div'); d.style.margin='8px 0'; d.style.textAlign = who==='bot'?'left':'right'; d.innerHTML = who==='bot'?`<div style="display:inline-block;padding:8px;border-radius:8px;background:#eef6ff;color:#000">${text}</div>`:`<div style="display:inline-block;padding:8px;border-radius:8px;background:var(--accent);color:#fff">${text}</div>`; chatBody.appendChild(d); chatBody.scrollTop = chatBody.scrollHeight; }
+    function appendChat(who, text){ 
+      const d = document.createElement('div'); 
+      d.style.margin='8px 0'; 
+      d.style.textAlign = who==='bot'?'left':'right'; 
+      d.innerHTML = who==='bot'?`<div style="display:inline-block;padding:8px;border-radius:8px;background:#eef6ff;color:#000">${text}</div>`:`<div style="display:inline-block;padding:8px;border-radius:8px;background:var(--accent);color:#fff">${text}</div>`; 
+      chatBody.appendChild(d); 
+      chatBody.scrollTop = chatBody.scrollHeight; 
+    }
 
     function getBotReply(msg){
       const m = msg.toLowerCase();
       if(m.includes('fare') || m.startsWith('how much') || m.includes('price')){
-        // try to parse "from X to Y"
         const parts = m.match(/from\s+([a-z0-9\s]+)\s+to\s+([a-z0-9\s]+)/i);
         if(parts && parts[1] && parts[2]){
           const a = parts[1].trim(); const b = parts[2].trim();
@@ -293,16 +311,22 @@
       return "I can help with fare estimates, vehicle availability and bookings. Try asking 'fare from A to B' or 'what vehicles are available'.";
     }
 
-    // theme toggle
-    const themeToggle = $('themeToggle'); const root = document.documentElement;
+    // ======== Theme toggle ========
+    const themeToggle = $('themeToggle');
     themeToggle.addEventListener('click', ()=>{
-      if(document.documentElement.hasAttribute('data-theme')){ document.documentElement.removeAttribute('data-theme'); } else { document.documentElement.setAttribute('data-theme','dark'); }
+      if(document.documentElement.hasAttribute('data-theme')){ document.documentElement.removeAttribute('data-theme'); } 
+      else { document.documentElement.setAttribute('data-theme','dark'); }
     });
 
-    // view history button
-    $('viewHistory').addEventListener('click', ()=>{ const arr = loadBookings(); if(!arr.length) return alert('No bookings yet'); const txt = arr.map(b=>`${b.timeText} • ${b.car || b.vehicle} • ${b.pick} → ${b.drop} • ${b.fareText}`).join('\n\n'); alert(txt); });
+    // ======== View history ========
+    $('viewHistory').addEventListener('click', ()=>{
+      const arr = loadBookings(); 
+      if(!arr.length) return alert('No bookings yet'); 
+      const txt = arr.map(b=>`${b.timeText} • ${b.car || b.vehicle} • ${b.pick} → ${b.drop} • ${b.fareText}`).join('\n\n'); 
+      alert(txt); 
+    });
 
-    // init
+    // ======== Init ========
     renderBookings();
   </script>
 </body>
