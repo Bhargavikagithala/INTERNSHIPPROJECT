@@ -3,288 +3,179 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Online Cab Booking — Demo</title>
-  <meta name="description" content="Responsive demo of an online cab booking UI " />
+  <title>Smart Cab Booking</title>
+  <meta name="description" content="Responsive AI-powered cab booking demo with Google Maps integration." />
   <style>
-    /* Simple, modern responsive styles. No frameworks required. */
     :root{--accent:#0b76ef;--muted:#6b7280;--card:#ffffff;--bg:#f3f5f9}
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,'Helvetica Neue',Arial; background:var(--bg);color:#111}
-    .container{max-width:1080px;margin:28px auto;padding:20px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:16px}
-    .brand{display:flex;align-items:center;gap:12px}
-    .logo{width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#6ec1ff);display:grid;place-items:center;color:white;font-weight:700}
-    h1{font-size:18px;margin:0}
-    p.lead{margin:0;color:var(--muted)}
-
-    .app{display:grid;grid-template-columns:1fr 420px;gap:20px;margin-top:22px}
-    /* Left column: search + map placeholder + results */
-    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(12,13,16,0.06)}
-    form .row{display:flex;gap:10px}
-    label{display:block;font-size:12px;color:var(--muted);margin-bottom:8px}
-    input[type=text],select,input[type=datetime-local]{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-size:14px}
-    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:0;background:var(--accent);color:white;font-weight:600;cursor:pointer}
-    .muted{color:var(--muted);font-size:13px}
-
-    .map{height:260px;border-radius:10px;border:1px dashed #dbe3f0;background:linear-gradient(180deg,#eef6ff,#fff);display:grid;place-items:center;color:var(--muted);font-weight:600}
-
-    .cars{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
-    .car{flex:1 1 120px;padding:12px;border-radius:10px;border:1px solid #eef2f7;background:#fcfeff;cursor:pointer}
-    .car.selected{outline:2px solid rgba(11,118,239,0.12);box-shadow:0 6px 18px rgba(11,118,239,0.06)}
-    .car h4{margin:0 0 6px 0}
-    .est{font-weight:700}
-
-    .right{position:relative}
-    .summary{position:sticky;top:28px}
-    .small{font-size:13px}
-
-    /* bookings list */
-    .bookings{margin-top:12px}
-    .booking{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;border:1px solid #eef2f7;margin-bottom:8px}
-
-    /* responsive */
-    @media(max-width:920px){
-      .app{grid-template-columns:1fr}
-      .right{order:2}
-    }
+    body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:#111}
+    .container{max-width:1100px;margin:auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .logo{background:linear-gradient(135deg,var(--accent),#4fb2ff);color:#fff;font-weight:700;padding:12px 16px;border-radius:10px}
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+    .btn{padding:10px 14px;border:none;border-radius:8px;background:var(--accent);color:white;font-weight:600;cursor:pointer}
+    input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e4e7ec;font-size:14px}
+    label{font-size:12px;color:var(--muted)}
+    .app{display:grid;grid-template-columns:1fr 420px;gap:20px;margin-top:20px}
+    @media(max-width:920px){.app{grid-template-columns:1fr}}
+    #map{width:100%;height:320px;border-radius:10px;margin-top:10px}
+    .chatbot{position:fixed;bottom:20px;right:20px;width:280px;background:#fff;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;font-size:14px}
+    .chat-header{background:var(--accent);color:#fff;padding:10px;font-weight:600;text-align:center}
+    .chat-body{padding:10px;height:200px;overflow-y:auto}
+    .chat-input{display:flex;border-top:1px solid #eee}
+    .chat-input input{flex:1;border:none;padding:10px}
+    .chat-input button{background:var(--accent);color:white;border:none;padding:10px 14px}
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <div class="brand">
-        <div class="logo">CB</div>
-        <div>
-          <h1>CabBook — Demo</h1>
-          <p class="lead">Responsive static cab booking UI </p>
-        </div>
-      </div>
-      <div class="muted small">Static demo • No payments • Local bookings</div>
+      <div class="logo">🚖 CabBook AI</div>
+      <div class="muted">Smart booking • Live map • AI helper</div>
     </header>
 
     <main class="app">
       <section>
         <div class="card">
-          <form id="searchForm">
-            <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <div>
-                <label for="pickup">Pickup</label>
-                <input id="pickup" name="pickup" type="text" placeholder="Enter pickup location" required />
-              </div>
-              <div>
-                <label for="drop">Drop</label>
-                <input id="drop" name="drop" type="text" placeholder="Enter drop location" required />
-              </div>
-            </div>
-
-            <div class="row" style="margin-bottom:12px">
-              <div style="flex:1">
-                <label for="datetime">Date & time</label>
-                <input id="datetime" name="datetime" type="datetime-local" />
-              </div>
-              <div style="width:160px">
-                <label for="passengers">Passengers</label>
-                <select id="passengers">
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                </select>
-              </div>
-            </div>
-
-            <label>Vehicle type</label>
-            <div class="cars" id="carList">
-              <!-- cars injected by JS -->
-            </div>
-
-            <div style="display:flex;gap:10px;align-items:center;margin-top:14px">
-              <button class="btn" type="submit">Search Rides</button>
-              <div id="estFare" class="muted small">Estimated fare: —</div>
-            </div>
+          <h3>Book your ride</h3>
+          <form id="form">
+            <label>Pickup Location</label>
+            <input id="pickup" placeholder="Enter pickup" required />
+            <label>Drop Location</label>
+            <input id="drop" placeholder="Enter drop" required />
+            <label>Date & Time</label>
+            <input id="datetime" type="datetime-local" />
+            <label>Vehicle Type</label>
+            <select id="vehicle">
+              <option value="mini">Mini</option>
+              <option value="sedan">Sedan</option>
+              <option value="suv">SUV</option>
+              <option value="lux">Luxury</option>
+            </select>
+            <button class="btn" type="submit">Find Ride</button>
           </form>
-
-          <div style="margin-top:16px">
-            <div class="map" id="map">Map / route preview</div>
-          </div>
-
-          <div style="margin-top:14px">
-            <h3 style="margin:0 0 8px 0">Available drivers</h3>
-            <div id="drivers" class="muted small">Search to show available drivers.</div>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:16px">
-          <h3 style="margin:0 0 8px 0">Your bookings</h3>
-          <div id="bookings" class="bookings muted small">No bookings yet</div>
+          <div id="map"></div>
+          <div id="fare" style="margin-top:10px;font-weight:600"></div>
         </div>
       </section>
 
-      <aside class="right">
-        <div class="summary card">
-          <h3 style="margin-top:0">Booking summary</h3>
-          <p class="small">Fill pickup & drop locations, choose vehicle and press <strong>Search Rides</strong>.</p>
-          <dl style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
-            <dt class="muted small">Pickup</dt><dd id="sumPickup">—</dd>
-            <dt class="muted small">Drop</dt><dd id="sumDrop">—</dd>
-            <dt class="muted small">Vehicle</dt><dd id="sumCar">—</dd>
-            <dt class="muted small">Time</dt><dd id="sumTime">—</dd>
-          </dl>
-
-          <div style="margin-top:12px">
-            <h4 style="margin:0">Fare estimate</h4>
-            <div style="font-size:20px;font-weight:700;margin-top:6px" id="sumFare">—</div>
-            <button class="btn" id="confirmBtn" style="margin-top:12px;width:100%" disabled>Confirm Booking</button>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:12px">
-          <h4 style="margin:0">Notes</h4>
-          <p class="small muted" style="margin-top:8px">This is a front-end demo. To make it production-ready you'd wire it to mapping, routing and a backend for drivers, payments and user accounts.</p>
+      <aside>
+        <div class="card">
+          <h3>Ride Summary</h3>
+          <p id="summary">Fill details and search to get started.</p>
         </div>
       </aside>
     </main>
   </div>
 
+  <!-- Chatbot -->
+  <div class="chatbot" id="chat">
+    <div class="chat-header">Ride Assistant 🤖</div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-input">
+      <input id="chatMsg" placeholder="Ask about fare or routes..." />
+      <button onclick="sendMsg()">▶</button>
+    </div>
+  </div>
+
   <script>
-    // --- Simple demo data ---
-    const VEHICLES = [
-      {id:'mini',name:'Mini',base:30,per_km:9,desc:'Economical 1-2 person'},
-      {id:'sedan',name:'Sedan',base:50,per_km:12,desc:'Comfortable 1-3 person'},
-      {id:'suv',name:'SUV',base:70,per_km:18,desc:'Spacious 1-5 person'},
-      {id:'lux',name:'Luxury',base:140,per_km:35,desc:'Premium ride'}
-    ];
+    let map, directionsService, directionsRenderer;
+    let pickupPlace, dropPlace;
 
-    const SAMPLE_DRIVERS = [
-      {name:'Ravi',car:'Mini',eta:3,rating:4.7},
-      {name:'Ankita',car:'Sedan',eta:6,rating:4.9},
-      {name:'Mohan',car:'SUV',eta:9,rating:4.6}
-    ];
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 17.3850, lng: 78.4867 }, zoom: 12,
+      });
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer({ map });
 
-    // --- Utils ---
-    function $(s){return document.querySelector(s)}
-    function $all(s){return Array.from(document.querySelectorAll(s))}
+      const pickupInput = document.getElementById("pickup");
+      const dropInput = document.getElementById("drop");
 
-    // render vehicle options
-    const carList = $('#carList');
-    let selectedVehicle = VEHICLES[0];
+      const autocompletePickup = new google.maps.places.Autocomplete(pickupInput);
+      const autocompleteDrop = new google.maps.places.Autocomplete(dropInput);
 
-    function renderVehicles(){
-      carList.innerHTML = '';
-      VEHICLES.forEach(v=>{
-        const el = document.createElement('div');
-        el.className = 'car' + (v.id===selectedVehicle.id ? ' selected':'');
-        el.innerHTML = `<h4>${v.name}</h4><div class="muted small">${v.desc}</div><div style="margin-top:8px;font-weight:700">Base ₹${v.base} • ₹${v.per_km}/km</div>`;
-        el.addEventListener('click',()=>{ selectedVehicle = v; renderVehicles(); updateSummary(); estimateFare(); });
-        carList.appendChild(el);
-      })
+      autocompletePickup.addListener("place_changed", () => {
+        pickupPlace = autocompletePickup.getPlace();
+      });
+      autocompleteDrop.addListener("place_changed", () => {
+        dropPlace = autocompleteDrop.getPlace();
+      });
     }
 
-    // Very naive distance estimator based on string length (for demo only)
-    function estimateDistance(pick,drop){
-      // If either is empty return 0
-      if(!pick||!drop) return 0;
-      // simple pseudo-distance: difference of chars + combined length scaled
-      const a = pick.trim().length, b = drop.trim().length;
-      const d = Math.max(1, Math.abs(a-b) + Math.round((a+b)/10));
-      return d; // kilometers
-    }
-
-    function formatINR(n){return '₹' + n.toFixed(0)}
-
-    function estimateFare(){
-      const pick = $('#pickup').value, drop = $('#drop').value;
-      const dist = estimateDistance(pick,drop);
-      const fare = selectedVehicle.base + selectedVehicle.per_km * dist;
-      $('#estFare').textContent = dist ? `Estimated fare: ${formatINR(fare)} • ${dist} km` : 'Estimated fare: —';
-      $('#sumFare').textContent = dist ? formatINR(fare) : '—';
-      return {fare,dist};
-    }
-
-    function updateMapPreview(){
-      const pick = $('#pickup').value || 'Pickup';
-      const drop = $('#drop').value || 'Drop';
-      $('#map').textContent = `${pick} → ${drop}`;
-    }
-
-    function updateSummary(){
-      $('#sumPickup').textContent = $('#pickup').value || '—';
-      $('#sumDrop').textContent = $('#drop').value || '—';
-      $('#sumCar').textContent = selectedVehicle.name;
-      $('#sumTime').textContent = $('#datetime').value ? new Date($('#datetime').value).toLocaleString() : 'ASAP';
-    }
-
-    // show available drivers (demo)
-    function showDrivers(){
-      const container = $('#drivers');
-      container.innerHTML = '';
-      SAMPLE_DRIVERS.forEach(d=>{
-        const el = document.createElement('div');
-        el.style.padding='8px';
-        el.style.borderBottom='1px dashed #eef2f7';
-        el.innerHTML = `<strong>${d.name}</strong> · ${d.car} · ${d.eta} min · ⭐ ${d.rating}`;
-        container.appendChild(el);
-      })
-    }
-
-    // bookings storage
-    function loadBookings(){
-      try{ return JSON.parse(localStorage.getItem('cabbook_bookings')||'[]') }catch(e){return []}
-    }
-    function saveBookings(arr){ localStorage.setItem('cabbook_bookings', JSON.stringify(arr)); }
-
-    function renderBookings(){
-      const box = $('#bookings');
-      const arr = loadBookings();
-      if(!arr.length){ box.textContent = 'No bookings yet'; box.classList.add('muted'); return }
-      box.classList.remove('muted'); box.innerHTML = '';
-      arr.slice().reverse().forEach(b=>{
-        const el = document.createElement('div'); el.className='booking';
-        el.innerHTML = `<div><div style="font-weight:700">${b.car} • ${b.fareText}</div><div class="muted small">${b.pick} → ${b.drop} • ${b.timeText}</div></div><div style="text-align:right"><button class="btn" style="padding:6px 8px" onclick='cancelBooking("${b.id}")'>Cancel</button></div>`;
-        box.appendChild(el);
-      })
-    }
-
-    window.cancelBooking = function(id){
-      const arr = loadBookings().filter(b=>b.id!==id); saveBookings(arr); renderBookings();
-    }
-
-    // handle search
-    $('#searchForm').addEventListener('submit',(e)=>{
+    document.getElementById("form").addEventListener("submit", (e) => {
       e.preventDefault();
-      updateSummary();
-      const {fare,dist} = estimateFare();
-      $('#confirmBtn').disabled = dist===0;
-      showDrivers();
-      // scroll to drivers
-      document.querySelector('.map').scrollIntoView({behavior:'smooth',block:'center'});
-    })
+      if (!pickupPlace || !dropPlace) {
+        alert("Please select valid locations from suggestions.");
+        return;
+      }
+      calculateRoute();
+    });
 
-    // confirm booking
-    $('#confirmBtn').addEventListener('click',()=>{
-      const pick = $('#pickup').value.trim();
-      const drop = $('#drop').value.trim();
-      if(!pick||!drop){ alert('Please provide pickup and drop locations.'); return }
-      const {fare,dist} = estimateFare();
-      if(dist===0){ alert('Cannot estimate distance.'); return }
-      const id = 'b_' + Date.now();
-      const booking = { id, pick, drop, car:selectedVehicle.name, fare, fareText:formatINR(fare), time:$('#datetime').value||new Date().toISOString(), timeText:($('#datetime').value? new Date($('#datetime').value).toLocaleString():'ASAP') };
-      const arr = loadBookings(); arr.push(booking); saveBookings(arr); renderBookings();
-      alert('Booking confirmed — check "Your bookings" panel.');
-    })
+    function calculateRoute() {
+      const req = {
+        origin: pickupPlace.geometry.location,
+        destination: dropPlace.geometry.location,
+        travelMode: "DRIVING"
+      };
+      directionsService.route(req, (res, status) => {
+        if (status === "OK") {
+          directionsRenderer.setDirections(res);
+          const dist = res.routes[0].legs[0].distance.value / 1000;
+          const time = res.routes[0].legs[0].duration.text;
+          const type = document.getElementById("vehicle").value;
+          const fare = calcFare(type, dist);
+          document.getElementById("fare").textContent = 
+            `Distance: ${dist.toFixed(1)} km • Est time: ${time} • Fare: ₹${fare}`;
+          document.getElementById("summary").innerHTML = 
+            `<b>${type.toUpperCase()}</b> from <i>${pickupPlace.name}</i> to <i>${dropPlace.name}</i><br>
+             Distance: ${dist.toFixed(1)} km • Fare: ₹${fare}`;
+        } else alert("Route not found.");
+      });
+    }
 
-    // wire inputs
-    $('#pickup').addEventListener('input',()=>{ updateMapPreview(); estimateFare(); updateSummary(); });
-    $('#drop').addEventListener('input',()=>{ updateMapPreview(); estimateFare(); updateSummary(); });
-    $('#datetime').addEventListener('change',updateSummary);
+    function calcFare(type, dist) {
+      const rates = { mini: 10, sedan: 14, suv: 18, lux: 30 };
+      const base = { mini: 50, sedan: 70, suv: 90, lux: 150 };
+      return (base[type] + dist * rates[type]).toFixed(0);
+    }
 
-    // init
-    renderVehicles(); renderBookings(); updateSummary();
+    // AI Chat Assistant
+    const chatBody = document.getElementById("chatBody");
+    function sendMsg() {
+      const msg = document.getElementById("chatMsg").value.trim();
+      if (!msg) return;
+      appendMsg("user", msg);
+      document.getElementById("chatMsg").value = "";
+      setTimeout(() => {
+        appendMsg("bot", getBotReply(msg));
+      }, 500);
+    }
+
+    function appendMsg(sender, text) {
+      const el = document.createElement("div");
+      el.style.margin = "6px 0";
+      el.style.textAlign = sender === "bot" ? "left" : "right";
+      el.innerHTML = sender === "bot"
+        ? `<div style="background:#eef6ff;display:inline-block;padding:6px 10px;border-radius:8px">${text}</div>`
+        : `<div style="background:#0b76ef;color:white;display:inline-block;padding:6px 10px;border-radius:8px">${text}</div>`;
+      chatBody.appendChild(el);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function getBotReply(msg) {
+      msg = msg.toLowerCase();
+      if (msg.includes("fare")) return "Fares depend on distance and cab type. Try entering locations for an estimate!";
+      if (msg.includes("available")) return "We have Mini, Sedan, SUV, and Luxury rides available 24/7.";
+      if (msg.includes("hello")) return "Hello! How can I help you plan your ride today?";
+      if (msg.includes("book")) return "You can fill the form and click 'Find Ride' to confirm your booking.";
+      return "I'm your ride assistant! Ask me about fares, cabs, or routes.";
+    }
   </script>
 
-  <!-- Deployment note (this comment will show in source):
-       To deploy on GitHub Pages: create a repository, add this file as index.html in the repo root,
-       commit & push to the main branch. In repo Settings -> Pages choose Branch: main / root and
-       your site will be available at https://<your-username>.github.io/<repo-name>/  -->
+  <!-- Google Maps Script -->
+  <script async
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&libraries=places&callback=initMap">
+  </script>
 </body>
 </html>
